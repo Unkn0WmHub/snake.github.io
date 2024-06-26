@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Змейка by Unkn0Wn</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1c1c1c;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .container {
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+
+    #game-board {
+        width: 400px;
+        height: 400px;
+        border: 2px solid #333;
+        display: grid;
+        grid-template-columns: repeat(20, 1fr);
+        grid-template-rows: repeat(20, 1fr);
+        background-color: #333;
+        border-radius: 5px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        margin-bottom: 20px;
+    }
+
+    .snake, .food {
+        width: calc(100% - 4px);
+        height: calc(100% - 4px);
+        background-color: #4CAF50;
+        border-radius: 3px;
+        margin: 2px;
+    }
+
+    .food {
+        background-color: #F44336;
+    }
+
+    #score {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    #best-score {
+        font-size: 1.2rem;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+    <h1>By <a href="https://github.com/Unkn0WmHub">Unkn0Wn</a>
+
+        <div id="game-board"></div>
+        <div id="score">Счет: <span id="score-value">0</span></div>
+        <div id="best-score">Лучший счет: <span id="best-score-value">0</span></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('game-board');
+            const scoreElement = document.getElementById('score-value');
+            const bestScoreElement = document.getElementById('best-score-value');
+            const boardSize = 20; // размеры поля 20x20
+            let snake = [{ x: 10, y: 10 }]; // начальное положение змейки
+            let food = { x: 5, y: 5 }; // начальное положение еды
+            let dx = 0; // направление по x
+            let dy = 0; // направление по y
+            let interval;
+            let score = 0;
+            let bestScore = 0;
+
+            // функция для создания нового положения еды
+            function generateFood() {
+                let newFoodX = Math.floor(Math.random() * boardSize);
+                let newFoodY = Math.floor(Math.random() * boardSize);
+
+                // проверка, чтобы еда не появлялась на змейке
+                while (snake.some(segment => segment.x === newFoodX && segment.y === newFoodY)) {
+                    newFoodX = Math.floor(Math.random() * boardSize);
+                    newFoodY = Math.floor(Math.random() * boardSize);
+                }
+
+                food = { x: newFoodX, y: newFoodY };
+                renderFood();
+            }
+
+            // функция для отрисовки змейки
+            function renderSnake() {
+                // очистка поля от старой змейки
+                const oldSnake = document.querySelectorAll('.snake');
+                oldSnake.forEach(segment => segment.parentNode.removeChild(segment));
+
+                // отрисовка новой змейки
+                snake.forEach(segment => {
+                    const snakeSegment = document.createElement('div');
+                    snakeSegment.classList.add('snake');
+                    snakeSegment.style.gridColumnStart = segment.x + 1;
+                    snakeSegment.style.gridRowStart = segment.y + 1;
+                    board.appendChild(snakeSegment);
+                });
+            }
+
+            // функция для отрисовки еды
+            function renderFood() {
+                const oldFood = document.querySelectorAll('.food');
+                oldFood.forEach(food => food.parentNode.removeChild(food));
+
+                const foodDiv = document.createElement('div');
+                foodDiv.classList.add('food');
+                foodDiv.style.gridColumnStart = food.x + 1;
+                foodDiv.style.gridRowStart = food.y + 1;
+                board.appendChild(foodDiv);
+            }
+
+            // функция для движения змейки
+            function moveSnake() {
+                const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+                // проверка на столкновение с границами поля
+                if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize) {
+                    gameOver();
+                    return;
+                }
+
+                // проверка на столкновение с самой собой
+                for (let i = 1; i < snake.length; i++) {
+                    if (head.x === snake[i].x && head.y === snake[i].y) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                snake.unshift(head); // добавляем новую голову змейки
+
+                // если змейка достигла еды
+                if (head.x === food.x && head.y === food.y) {
+                    score++;
+                    scoreElement.textContent = score;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestScoreElement.textContent = bestScore;
+                    }
+                    generateFood(); // генерируем новую еду
+                } else {
+                    snake.pop(); // удаляем последний сегмент змейки
+                }
+
+                renderSnake(); // отрисовываем новую змейку
+            }
+
+            // функция для завершения игры
+            function gameOver() {
+                clearInterval(interval);
+                alert(`Игра окончена! Счет: ${score}`);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestScoreElement.textContent = bestScore;
+                }
+                resetGame();
+            }
+
+            // сброс игры в начальное состояние
+            function resetGame() {
+                snake = [{ x: 10, y: 10 }];
+                dx = 0;
+                dy = 0;
+                score = 0;
+                scoreElement.textContent = score;
+                generateFood();
+                renderSnake();
+                interval = setInterval(moveSnake, 150); // увеличение скорости змейки
+            }
+
+            // обработчик нажатий клавиш для управления змейкой
+            document.addEventListener('keydown', e => {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (dy === 0) {
+                            dx = 0;
+                            dy = -1;
+                        }
+                        break;
+                    case 'ArrowDown':
+                        if (dy === 0) {
+                            dx = 0;
+                            dy = 1;
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (dx === 0) {
+                            dx = -1;
+                            dy = 0;
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (dx === 0) {
+                            dx = 1;
+                            dy = 0;
+                        }
+                        break;
+                }
+            });
+
+            // начало игры
+            generateFood(); // генерация первой еды
+            renderSnake(); // отрисовка первой змейки
+            interval = setInterval(moveSnake, 150); // запуск движения змейки с начальной скоростью
+
+        });
+    </script>
+</body>
+</html>
